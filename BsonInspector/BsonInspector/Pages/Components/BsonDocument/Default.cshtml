@@ -1,0 +1,35 @@
+﻿@model DefaultModel
+
+<h2 class="text-center">Inspection result</h2>
+
+<div class="alert  @(Model.IsValid ? "alert-success" : "alert-danger")" role="alert">@Model.ResultMessage</div>
+
+@{ if (Model.IsValid)
+    {
+        <div class="text-left">
+            <div><label class="font-weight-bold mb-2">Bson document total lenght:</label> @Model.BsonDocument.DocumentLength bytes</div>
+            <table class="table table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Data type</th>
+                        <th scope="col">Value bytes</th>
+                        <th scope="col">Readable value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ foreach (var element in Model.BsonDocument.Elements)
+                        {
+                            <tr>
+                                <td>@element.Name</td>
+                                <td>@element.Type</td>
+                                <td>@string.Join(", ", element.Value);</td>
+                                <td>@element.PresentReadableValue()</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
