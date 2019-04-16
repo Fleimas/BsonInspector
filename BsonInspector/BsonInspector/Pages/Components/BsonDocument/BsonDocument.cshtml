@@ -1,0 +1,75 @@
+﻿@model BsonInspector.Core.BsonDocument
+<div class="text-left">
+    <div><label class="font-weight-bold mb-2">Bson document total lenght:</label> @Model.DocumentLength bytes</div>
+    <table class="table">
+        <thead class="thead-dark">
+            <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Data type</th>
+                <th scope="col" width="50%">Value bytes</th>
+                <th scope="col" width="50%">Human readable value</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{ foreach (var element in Model.Elements)
+                {
+                    <tr>
+                        <td>@element.Name</td>
+                        <td>@element.Type</td>
+                        <td>@string.Join(", ", element.Value.Bytes)</td>
+
+                        @{ if (!element.Value.IsDocument)
+                            {
+                                <td>
+                                    <text>@element.Value.HumanReadablePresenter.Presentation()</text>
+                                </td>
+                            }
+                            else
+                            {
+                                <td class="align-middle text-center">
+                                    <button class="btn btn-primary expand-document-button"
+                                            id="inner-doc-@element.Value.Document.Id-controller"
+                                            data-toggle="collapse"
+                                            data-target="#inner-doc-@element.Value.Document.Id"
+                                            aria-expanded="false"
+                                            aria-controls="#inner-doc-@element.Value.Document.Id">
+                                        Expand
+                                    </button>
+                                </td>
+                            }
+                        }
+                    </tr>
+
+                    @if (element.Value.IsDocument)
+                    {
+                        <tr>
+                            <td colspan="4" style="padding: 0">
+                                <div id="inner-doc-@element.Value.Document.Id" class="collapse" data-collapse-controller="#inner-doc-@element.Value.Document.Id-controller">
+                                    <div style="border-style:solid; border-width: 0 0 0 10px; border-color:#343a40;margin-left:20px; ">@await Html.PartialAsync("BsonDocument.cshtml", element.Value.Document)</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<script>
+
+    $('.collapse').on('show.bs.collapse', function (e) {
+        if ($(this).is(e.target)) {
+            var controller = $(this).data('collapse-controller');
+            $(controller).text("Collapse");
+        }
+    });
+
+    $('.collapse').on('hide.bs.collapse', function (e) {
+        if ($(this).is(e.target)) {
+            var controller = $(this).data('collapse-controller');
+            $(controller).text("Expand");
+        }
+    });
+
+</script>

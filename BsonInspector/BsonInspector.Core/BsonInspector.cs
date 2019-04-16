@@ -81,6 +81,8 @@ namespace BsonInspector.Core
             int readValueBytesCount;
             IValuePresenter valuePresenter;
             byte[] value;
+            BsonDocument innerDocument = null;
+
             switch (elementType)
             {
                 case BsonElementTypes.bDouble:
@@ -97,7 +99,7 @@ namespace BsonInspector.Core
                     break;
                 case BsonElementTypes.bEmbeddedDocument:
                 case BsonElementTypes.bDocumentArray:
-                    var innerDocument = ReadDocument(data.Slice(offset, data.Count - offset).ToArray());
+                    innerDocument = ReadDocument(data.Slice(offset, data.Count - offset).ToArray());
                     value = data.Slice(offset, innerDocument.DocumentLength).ToArray();
                     offset += innerDocument.DocumentLength;
                     valuePresenter = new DocumentValuePresenter(innerDocument);
@@ -188,7 +190,7 @@ namespace BsonInspector.Core
             }
 
             readBytesCount = offset;
-            return new BsonElement(elementType, elementName, value, valuePresenter);
+            return new BsonElement(elementType, elementName, new BsonElementValue(value, valuePresenter, innerDocument));
         }
 
         private byte[] ReadStringValue(ArraySegment<byte> data, out int readBytesCount)

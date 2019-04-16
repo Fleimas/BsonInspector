@@ -1,4 +1,4 @@
-﻿namespace BsonInspector.Core
+﻿namespace BsonInspector.Core.Abstract
 {
     public interface IValuePresenter
     {
