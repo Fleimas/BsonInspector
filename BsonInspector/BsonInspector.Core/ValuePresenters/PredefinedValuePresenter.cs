@@ -1,4 +1,6 @@
-﻿namespace BsonInspector.Core.ValuePresenters
+﻿using BsonInspector.Core.Abstract;
+
+namespace BsonInspector.Core.ValuePresenters
 {
     public class PredefinedValuePresenter : IValuePresenter
     {

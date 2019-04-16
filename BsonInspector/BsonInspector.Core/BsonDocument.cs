@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace BsonInspector.Core
 {
@@ -12,6 +13,8 @@ namespace BsonInspector.Core
                 Elements.Add(element);
             }
         }
+
+        public Guid Id { get; } = Guid.NewGuid();
 
         public IList<BsonElement> Elements { get; } = new List<BsonElement>();
 

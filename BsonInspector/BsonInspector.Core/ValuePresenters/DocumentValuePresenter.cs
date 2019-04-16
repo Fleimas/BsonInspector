@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using BsonInspector.Core.Abstract;
+using System.Text;
 
 namespace BsonInspector.Core.ValuePresenters
 {
@@ -18,7 +19,7 @@ namespace BsonInspector.Core.ValuePresenters
             stringBuilder.AppendLine("Elements:");
             foreach (var element in _document.Elements)
             {
-                stringBuilder.AppendLine($"{element.Name}, {element.Type}, {element.PresentReadableValue()}");
+                stringBuilder.AppendLine($"{element.Name}, {element.Type}, {element.Value.HumanReadablePresenter.Presentation()}");
             }
 
             return stringBuilder.ToString();

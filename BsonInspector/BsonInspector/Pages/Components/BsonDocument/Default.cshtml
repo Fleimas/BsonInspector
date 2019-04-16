@@ -6,15 +6,17 @@
 
 @{ if (Model.IsValid)
     {
-        <div class="text-left">
+        @await Html.PartialAsync("BsonDocument.cshtml", Model.BsonDocument)
+
+        @*<div class="text-left">
             <div><label class="font-weight-bold mb-2">Bson document total lenght:</label> @Model.BsonDocument.DocumentLength bytes</div>
             <table class="table table-striped">
                 <thead class="thead-dark">
                     <tr>
                         <th scope="col">Name</th>
                         <th scope="col">Data type</th>
-                        <th scope="col">Value bytes</th>
-                        <th scope="col">Readable value</th>
+                        <th scope="col" width="50%">Value bytes</th>
+                        <th scope="col" width="50%">Human readable value</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -23,13 +25,35 @@
                             <tr>
                                 <td>@element.Name</td>
                                 <td>@element.Type</td>
-                                <td>@string.Join(", ", element.Value);</td>
-                                <td>@element.PresentReadableValue()</td>
+                                <td>@string.Join(", ", element.Value.Bytes)</td>
+
+                                @{ if (!element.Value.IsDocument)
+                                    {
+                                        <td>
+                                            <text>@element.Value.HumanReadablePresenter.Presentation()</text>
+                                        </td>
+                                    }
+                                    else
+                                    {
+                                        <td class="align-middle text-center">
+                                            <Button class="btn btn-primary">Expand document</Button>
+                                        </td>
+                                    }
+                                }
                             </tr>
+
+                            @if (element.Value.IsDocument)
+                            {
+                                <tr>
+                                    <td colspan="4">
+                                        the inner doc
+                                    </td>
+                                </tr>
+                            }
                         }
                     }
                 </tbody>
             </table>
-        </div>
+        </div>*@
     }
 }
