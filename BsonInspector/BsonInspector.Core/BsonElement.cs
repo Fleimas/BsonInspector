@@ -4,17 +4,20 @@ namespace BsonInspector.Core
 {
     public class BsonElement
     {
-        private readonly IValuePresenter _valuePresenter;
-
-        public BsonElement(BsonElementTypes type, string name, BsonElementValue value)
+        public BsonElement(BsonElementTypes type, string name, BsonElementValue value, BinarySubtybes? subtybe = null)
         {
             Type = type;
             Name = name;
             Value = value;
+            Subtybe = subtybe;
         }
 
         public BsonElementTypes Type { get; }
+
+
         public string Name { get; }
         public BsonElementValue Value { get; }
+
+        public BinarySubtybes? Subtybe { get; }
     }
 }

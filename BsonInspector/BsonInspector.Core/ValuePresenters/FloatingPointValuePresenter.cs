@@ -17,9 +17,9 @@ namespace BsonInspector.Core.ValuePresenters
             if (_data.Length == 8)
                 return Convert.ToString(BitConverter.ToDouble(_data));
 
-#warning TODO decimal 128
+#warning TODO decimal 128, current imp probably invalid
             if (_data.Length == 16)
-                return Convert.ToString(_data);
+                return Convert.ToString(decimal.Parse(System.Text.Encoding.UTF8.GetString(_data).ToCharArray()));
 
             return Convert.ToString(_data);
         }

@@ -24,7 +24,7 @@ namespace BsonInspector.Core.Tests
             var inspector = new BsonInspector();
             var generator = new BsonGenerator();
 
-            var bson = generator.Generate(new { Id = Guid.NewGuid(), SveikasSk = 15, Tekstas = "Silvija", artaip = true, arne = false });
+            var bson = generator.Generate(new { Id = Guid.NewGuid(), SveikasSk = 15, Tekstas = "Silvija", slenkantis=15.44, arne = false, dc = 300.545546545645111m });
 
             var inspected = inspector.Inspect(bson);
             Console.Write(new DocumentValuePresenter(inspected.Document).Presentation());

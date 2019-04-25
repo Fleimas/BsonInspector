@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - BsonInspector</title>
+    <title>@ViewData["Title"] - BSON Inspector</title>
 
     <environment include="Development">
         <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
@@ -21,12 +21,11 @@
     <header class="mb-5 p-3 bg-charcoal">
         <div class="container">
             <div class="container">
-                <h1 class="text-columbia-blue">Bson Inspector</h1>
+                <h1 class="text-columbia-blue">BSON Inspector</h1>
             </div>
         </div>
     </header>
     <div class="container">
-        <partial name="_CookieConsentPartial" />
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
@@ -34,7 +33,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2019 - BsonInspector - <a asp-area="" asp-page="/Privacy">Privacy</a>
+            &copy; 2019 - BSON Inspector
         </div>
     </footer>
 
@@ -58,6 +57,6 @@
     </environment>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
-    @RenderSection("Scripts", required: false)
+    @RenderSection("Scripts", required: true)
 </body>
 </html>

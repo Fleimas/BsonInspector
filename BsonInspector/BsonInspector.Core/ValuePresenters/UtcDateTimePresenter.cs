@@ -1,4 +1,5 @@
 ﻿using BsonInspector.Core.Abstract;
+using BsonInspector.Core.Utility;
 using System;
 
 namespace BsonInspector.Core.ValuePresenters
@@ -14,8 +15,8 @@ namespace BsonInspector.Core.ValuePresenters
 
         public string Presentation()
         {
-            var dateTime = new DateTime(BitConverter.ToInt64(_data));
-            return dateTime.ToString();
+            var dateTime= DateTimeHelper.GetDateTimeFromUnixTicks(BitConverter.ToInt64(_data));
+            return dateTime.ToString("yyyy-MM-ddTHH:mm:ssZ"); //ISO 8601
         }
     }
 }

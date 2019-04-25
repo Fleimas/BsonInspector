@@ -44,11 +44,11 @@ namespace BsonInspector.Core
             var docTotal = GetInt32(data, 0);
             offset += Int32Length;
             if (isTopLevel && docTotal != data.Length)
-                throw new InvalidDataException("bson length is not valid");
+                throw new InvalidDataException($"Bson length is {data.Length}, but document states that it is {docTotal}");
 
             var lastByte = data[docTotal - 1];
             if (isTopLevel && !lastByte.Equals(EndingSymbol))
-                throw new InvalidDataException("bson missing ending symbol \x00");
+                throw new InvalidDataException("Bson document is missing ending symbol \x00");
 
             var elements = ReadElements(new ArraySegment<byte>(data, offset, docTotal - offset - 1));
 
@@ -82,7 +82,7 @@ namespace BsonInspector.Core
             IValuePresenter valuePresenter;
             byte[] value;
             BsonDocument innerDocument = null;
-
+            BinarySubtybes? subtybe = null;
             switch (elementType)
             {
                 case BsonElementTypes.bDouble:
@@ -105,7 +105,10 @@ namespace BsonInspector.Core
                     valuePresenter = new DocumentValuePresenter(innerDocument);
                     break;
                 case BsonElementTypes.bBinary:
-                    valuePresenter = ReadBinaryValue(data.Slice(offset, data.Count - offset), out readValueBytesCount, out value);
+                    var binaryValueResult = ReadBinaryValue(data.Slice(offset, data.Count - offset), out readValueBytesCount);
+                    valuePresenter = binaryValueResult.presenter;
+                    value = binaryValueResult.value;
+                    subtybe = binaryValueResult.subtybe;
                     offset += readValueBytesCount;
                     break;
                 case BsonElementTypes.bUndefined:
@@ -190,7 +193,7 @@ namespace BsonInspector.Core
             }
 
             readBytesCount = offset;
-            return new BsonElement(elementType, elementName, new BsonElementValue(value, valuePresenter, innerDocument));
+            return new BsonElement(elementType, elementName, new BsonElementValue(value, valuePresenter, innerDocument), subtybe);
         }
 
         private byte[] ReadStringValue(ArraySegment<byte> data, out int readBytesCount)
@@ -220,7 +223,7 @@ namespace BsonInspector.Core
             return nameBytes.ToArray();
         }
 
-        private IValuePresenter ReadBinaryValue(ArraySegment<byte> data, out int readBytesCount, out byte[] value)
+        private (IValuePresenter presenter, byte[] value, BinarySubtybes subtybe) ReadBinaryValue(ArraySegment<byte> data, out int readBytesCount)
         {
             int offset = 0;
             var valueBytesCount = GetInt32(data, offset);
@@ -231,17 +234,23 @@ namespace BsonInspector.Core
 
             readBytesCount = offset + valueBytesCount;
 
-            value = data.AsSpan(offset, valueBytesCount).ToArray();
+            var value = data.AsSpan(offset, valueBytesCount).ToArray();
+            IValuePresenter valuePresenter;
             switch (subtype)
             {
                 case BinarySubtybes.Generic:
-                    return new GenericBinaryValuePresenter(value);
+                    valuePresenter = new GenericBinaryValuePresenter(value);
+                    break;
                 case BinarySubtybes.UUID:
                 case BinarySubtybes.UUIDold:
-                    return new GUIDBinaryValuePresenter(value);
+                    valuePresenter = new GUIDBinaryValuePresenter(value);
+                    break;
                 default:
-                    return new GenericBinaryValuePresenter(value);
+                    valuePresenter = new GenericBinaryValuePresenter(value);
+                    break;
             }
+
+            return (valuePresenter, value, subtype);
         }
 
         private string ReadElementName(ArraySegment<byte> data, out int readNameBytesCount) =>
