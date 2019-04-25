@@ -46,7 +46,6 @@ namespace BsonInspector.Pages
             }
             catch (Exception ex)
             {
-                //TODO need informative display of what was wrong
                 return Content(ex.Message);
             }
         }

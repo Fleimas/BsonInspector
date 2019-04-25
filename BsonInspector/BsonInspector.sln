@@ -3,11 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28803.156
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BsonInspector", "BsonInspector\BsonInspector.csproj", "{8DED365D-3058-4F5A-A61A-2EEFC6CF71E1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BsonInspector", "BsonInspector\BsonInspector.csproj", "{8DED365D-3058-4F5A-A61A-2EEFC6CF71E1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BsonInspector.Core", "BsonInspector.Core\BsonInspector.Core.csproj", "{7DE6759E-B8E5-4A8A-919E-D361709C652C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BsonInspector.Core", "BsonInspector.Core\BsonInspector.Core.csproj", "{7DE6759E-B8E5-4A8A-919E-D361709C652C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BsonInspector.Core.Tests", "BsonInspector.Core.Tests\BsonInspector.Core.Tests.csproj", "{215C6648-1783-4A06-8808-366AF23A8BE4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BsonInspector.Core.Tests", "BsonInspector.Core.Tests\BsonInspector.Core.Tests.csproj", "{215C6648-1783-4A06-8808-366AF23A8BE4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{BACDD362-F04D-436C-A95D-2E06A1793378}"
+	ProjectSection(SolutionItems) = preProject
+		Dockerfile.txt = Dockerfile.txt
+		Readme.txt = Readme.txt
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

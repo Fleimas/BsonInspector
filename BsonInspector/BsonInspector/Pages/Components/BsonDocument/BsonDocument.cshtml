@@ -1,59 +1,69 @@
-﻿@model BsonInspector.Core.BsonDocument
+﻿@model BsonDocumentViewModel
+@using BsonInspector.Core;
+@using BsonInspector.Core.Utility;
+
 <div class="text-left">
-    <div><label class="font-weight-bold mb-2">Bson document total lenght:</label> @Model.DocumentLength bytes</div>
-    <table class="table">
-        <thead class="thead-dark">
-            <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Data type</th>
-                <th scope="col" width="50%">Value bytes</th>
-                <th scope="col" width="50%">Human readable value</th>
-            </tr>
-        </thead>
-        <tbody>
-            @{ foreach (var element in Model.Elements)
-                {
-                    <tr>
-                        <td>@element.Name</td>
-                        <td>@element.Type</td>
-                        <td>@string.Join(", ", element.Value.Bytes)</td>
-
-                        @{ if (!element.Value.IsDocument)
-                            {
-                                <td>
-                                    <text>@element.Value.HumanReadablePresenter.Presentation()</text>
-                                </td>
-                            }
-                            else
-                            {
-                                <td class="align-middle text-center">
-                                    <button class="btn btn-primary expand-document-button"
-                                            id="inner-doc-@element.Value.Document.Id-controller"
-                                            data-toggle="collapse"
-                                            data-target="#inner-doc-@element.Value.Document.Id"
-                                            aria-expanded="false"
-                                            aria-controls="#inner-doc-@element.Value.Document.Id">
-                                        Expand
-                                    </button>
-                                </td>
-                            }
-                        }
-                    </tr>
-
-                    @if (element.Value.IsDocument)
+    <div class="card">
+        <div class="card-header">
+            <text class="font-weight-bold">@Model.LengthLabel</text>
+            @Model.BsonDocument.DocumentLength bytes
+        </div>
+        <table class="table mb-0 table-sm">
+            <thead class="bg-lightblue text-white">
+                <tr>
+                    <th scope="col">@(Model.IsArray ? "Index" : "Name")</th>
+                    <th scope="col">Data type</th>
+                    <th scope="col" width="50%">Value bytes</th>
+                    <th scope="col" width="50%">Human readable value</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ foreach (var element in Model.BsonDocument.Elements)
                     {
                         <tr>
-                            <td colspan="4" style="padding: 0">
-                                <div id="inner-doc-@element.Value.Document.Id" class="collapse" data-collapse-controller="#inner-doc-@element.Value.Document.Id-controller">
-                                    <div style="border-style:solid; border-width: 0 0 0 10px; border-color:#343a40;margin-left:20px; ">@await Html.PartialAsync("BsonDocument.cshtml", element.Value.Document)</div>
-                                </div>
-                            </td>
+                            <td>@element.Name</td> 
+                            <td>@Model.GetElementDataTypeDisplay(element)</td>
+                            <td>@string.Join(", ", element.Value.Bytes)</td>
+
+                            @{ if (!element.Value.IsDocument)
+                                {
+                                    <td>
+                                        <text>@Model.GeHumanRepresentation(element.Value.HumanReadablePresenter)</text>
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td class="align-middle text-center">
+                                        <button class="btn btn-primary expand-document-button"
+                                                id="inner-doc-@element.Value.Document.Id-controller"
+                                                data-toggle="collapse"
+                                                data-target="#inner-doc-@element.Value.Document.Id"
+                                                aria-expanded="false"
+                                                aria-controls="#inner-doc-@element.Value.Document.Id">
+                                            Expand
+                                        </button>
+                                    </td>
+                                }
+                            }
                         </tr>
+
+                        @if (element.Value.IsDocument)
+                        {
+                            <tr>
+                                <td colspan="4" style="padding: 0">
+                                    <div id="inner-doc-@element.Value.Document.Id" class="collapse" data-collapse-controller="#inner-doc-@element.Value.Document.Id-controller">
+                                        <div style="border-style:solid; border-width: 0 0 0 10px; border-color:darkslategray; margin-left:10px;">
+                                            @await Html.PartialAsync("BsonDocument.cshtml", new BsonDocumentViewModel(element.Value.Document, true, element.Type == Core.BsonElementTypes.bDocumentArray))
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
                     }
                 }
-            }
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>

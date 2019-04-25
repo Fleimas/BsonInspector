@@ -1,28 +1,37 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Home";
 }
-<div class="container-fluid">
-    <form id="file-input-form" method="post" enctype="multipart/form-data">
-        <div class="form-group">
-            <div class="custom-file">
-                <input type="file" class="custom-file-input" asp-for="BsonFile" id="bsonFileInput" required />
-                <label class="custom-file-label text-truncate" for="bsonFileInput">Choose bson file</label>
+    <div class="container-fluid">
+        <p>
+            A tool for inspecting and analyzing BSON files. It will read your provided file and present it in human readable format for you to analyze. <br />
+            Inspects file according to BSON specification version 1.1. <a href="http://bsonspec.org/spec.html">Read more</a>
+        </p>
+        <form id="file-input-form" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" asp-for="BsonFile" id="bsonFileInput" required />
+                    <label class="custom-file-label text-truncate" for="bsonFileInput">Choose BSON file</label>
+                </div>
             </div>
-        </div>
-        <Button type="submit" id="inspect-button" class="btn btn-primary">Inspect</Button>
+            <Button type="submit" id="inspect-button" class="btn btn-primary">Inspect</Button>
 
-    </form>
+        </form>
 
-    <div id="inspected-document-container" class="mt-4"></div>
-</div>
+        <div id="inspected-document-container" class="mt-4"></div>
+    </div>
 
 @section scripts {
 <script>
     $('#bsonFileInput').on('change', function () {
         //get the file name
-        var fileName = document.getElementById("bsonFileInput").files[0].name;
+        var file = document.getElementById("bsonFileInput").files[0];
+        if (file)
+            var fileName = document.getElementById("bsonFileInput").files[0].name;
+        else {
+            var fileName = "";
+        }
         //replace the "Choose a file" label
         $('.custom-file-label').html(fileName);
     });

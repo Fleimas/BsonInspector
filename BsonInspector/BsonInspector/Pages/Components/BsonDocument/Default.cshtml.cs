@@ -15,8 +15,8 @@ namespace BsonInspector.Pages.Components.BsonDocument
         public Core.BsonDocument BsonDocument => _bsonInspectionResult.Document;
 
         public string ResultMessage => IsValid ?
-                    "Your bson is valid" :
-                    $"Your bson is invalid: {_bsonInspectionResult.Error}";
+                    "Your BSON is valid" :
+                    $"Your BSON is invalid: {_bsonInspectionResult.Error}";
 
         public bool IsValid => _bsonInspectionResult.IsValid;
     }
