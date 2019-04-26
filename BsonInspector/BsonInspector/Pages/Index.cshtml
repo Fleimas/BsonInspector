@@ -3,51 +3,56 @@
 @{
     ViewData["Title"] = "Home";
 }
-    <div class="container-fluid">
-        <p>
-            A tool for inspecting and analyzing BSON files. It will read your provided file and present it in human readable format for you to analyze. <br />
-            Inspects file according to BSON specification version 1.1. <a href="http://bsonspec.org/spec.html">Read more</a>
-        </p>
-        <form id="file-input-form" method="post" enctype="multipart/form-data">
-            <div class="form-group">
-                <div class="custom-file">
-                    <input type="file" class="custom-file-input" asp-for="BsonFile" id="bsonFileInput" required />
-                    <label class="custom-file-label text-truncate" for="bsonFileInput">Choose BSON file</label>
-                </div>
+<div class="container-fluid">
+    <p>
+        A tool for inspecting and analyzing BSON files. It will read your provided file and present it in human readable format for you to analyze. <br />
+        Inspects file according to BSON specification version 1.1. <a href="http://bsonspec.org/spec.html">Read more</a>
+    </p>
+    <form id="file-input-form" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <div class="custom-file">
+                <input type="file" class="custom-file-input" asp-for="BsonFile" id="bsonFileInput" required />
+                <label class="custom-file-label text-truncate" for="bsonFileInput">Choose BSON file</label>
             </div>
-            <Button type="submit" id="inspect-button" class="btn btn-primary">Inspect</Button>
+        </div>
+        <Button type="submit" id="inspect-button" class="btn btn-primary">Inspect</Button>
 
-        </form>
+    </form>
 
-        <div id="inspected-document-container" class="mt-4"></div>
-    </div>
+    <div id="inspected-document-container" class="mt-4"></div>
+</div>
 
 @section scripts {
 <script>
     $('#bsonFileInput').on('change', function () {
-        //get the file name
         var file = document.getElementById("bsonFileInput").files[0];
-        if (file)
-            var fileName = document.getElementById("bsonFileInput").files[0].name;
-        else {
-            var fileName = "";
+        if (!file) {
+            $('.custom-file-label').html("");
         }
-        //replace the "Choose a file" label
-        $('.custom-file-label').html(fileName);
+        else {
+            $('.custom-file-label').html(file.name);
+        }
     });
 
     $("#file-input-form").submit(function (event) {
         ShowSpinner();
         event.preventDefault();
+        var file = document.getElementById("bsonFileInput").files[0];
+        if (file.size > 17000000) { // 16+mb
+            $('#inspected-document-container').html('<div class="alert alert-danger" role="alert">File size exceeds the limit of 16mb</div>');
+            return;
+        }
+
         $.ajax({
             url: '/index',
             data: new FormData($('#file-input-form')[0]),
             contentType: false,
             processData: false,
-            type: 'post',
-            success: function (data) {
-                $('#inspected-document-container').html(data);
-            }
+            type: 'post'
+        }).done(function (data) {
+            $('#inspected-document-container').html(data);
+        }).fail(function () {
+            $('#inspected-document-container').html('<div class="alert alert-danger" role="alert">Something went wrong.</div>');
         });
     });
 

@@ -23,11 +23,14 @@ namespace BsonInspector.Core
         {
         }
 
-        public BsonInspectionResult Inspect(byte[] bson)
+        public BsonInspectionResult Inspect(Stream bson)
         {
             try
             {
-                return new BsonInspectionResult(ReadDocument(bson, true));
+                using (var reader = new BinaryReader(bson))
+                {
+                    return new BsonInspectionResult(ReadDocument(reader, true));
+                }
             }
             catch (Exception ex)
             {
@@ -38,47 +41,41 @@ namespace BsonInspector.Core
         /// <summary>
         /// If top level validate bson to document length
         /// </summary>
-        private BsonDocument ReadDocument(byte[] data, bool isTopLevel = false)
+        private BsonDocument ReadDocument(BinaryReader data, bool isTopLevel = false)
         {
-            int offset = 0;
-            var docTotal = GetInt32(data, 0);
-            offset += Int32Length;
-            if (isTopLevel && docTotal != data.Length)
-                throw new InvalidDataException($"Bson length is {data.Length}, but document states that it is {docTotal}");
+            var docTotal = data.ReadInt32();
+            if (isTopLevel && docTotal != data.BaseStream.Length)
+                throw new InvalidDataException($"BSON document states that the length is: {docTotal}, but actual file size is: {data.BaseStream.Length}.");
 
-            var lastByte = data[docTotal - 1];
-            if (isTopLevel && !lastByte.Equals(EndingSymbol))
-                throw new InvalidDataException("Bson document is missing ending symbol \x00");
+            var elements = ReadElements(data);
 
-            var elements = ReadElements(new ArraySegment<byte>(data, offset, docTotal - offset - 1));
-
-            return new BsonDocument(docTotal, elements.ToArray());
+            return new BsonDocument(docTotal, new byte[] { }, elements.ToArray());
         }
 
-        private IList<BsonElement> ReadElements(ArraySegment<byte> data)
+        private IList<BsonElement> ReadElements(BinaryReader data)
         {
             var elements = new List<BsonElement>();
-
-            while (data.Count > 0)
+            while (data.BaseStream.Position < data.BaseStream.Length)
             {
-                var element = ReadElement(data, out int readBytesCount);
-                data = data.Slice(readBytesCount, data.Count - readBytesCount);
+                var element = ReadElement(data);
                 elements.Add(element);
+
+                var checkEnd = data.ReadByte();
+                if (checkEnd.Equals(EndingSymbol))
+                    break;
+                else
+                    data.BaseStream.Position -= 1;
             }
 
             return elements;
         }
 
-        private BsonElement ReadElement(ArraySegment<byte> data, out int readBytesCount)
+        private BsonElement ReadElement(BinaryReader data)
         {
-            int offset = 0;
-            var dataType = data[offset];
-            offset += 1;
+            var dataType = data.ReadByte();
             var elementType = ParseElementType(dataType);
-            string elementName = ReadElementName(data.Slice(offset, data.Count - offset), out int readNameBytesCount);
-            offset += readNameBytesCount;
+            string elementName = ReadElementName(data);
 
-            int readValueBytesCount;
             IValuePresenter valuePresenter;
             byte[] value;
             BsonDocument innerDocument = null;
@@ -86,99 +83,87 @@ namespace BsonInspector.Core
             switch (elementType)
             {
                 case BsonElementTypes.bDouble:
-                    value = data.Slice(offset, DoubleLength).ToArray();
+                    value = data.ReadBytes(DoubleLength);
                     valuePresenter = new FloatingPointValuePresenter(value);
-                    offset += DoubleLength;
                     break;
                 case BsonElementTypes.bString:
                 case BsonElementTypes.bSymbol:
                 case BsonElementTypes.bJavascriptCode:
-                    value = ReadStringValue(data.Slice(offset, data.Count - offset), out readValueBytesCount);
-                    valuePresenter = new StringValuePresenter(value);
-                    offset += readValueBytesCount;
+                    value = ReadStringValue(data);
+                    valuePresenter = new StringValuePresenter(value.SkipLast(1).ToArray());
                     break;
                 case BsonElementTypes.bEmbeddedDocument:
                 case BsonElementTypes.bDocumentArray:
-                    innerDocument = ReadDocument(data.Slice(offset, data.Count - offset).ToArray());
-                    value = data.Slice(offset, innerDocument.DocumentLength).ToArray();
-                    offset += innerDocument.DocumentLength;
+                    innerDocument = ReadDocument(data);
+                    value = innerDocument.ValueInBytes;
                     valuePresenter = new DocumentValuePresenter(innerDocument);
                     break;
                 case BsonElementTypes.bBinary:
-                    var binaryValueResult = ReadBinaryValue(data.Slice(offset, data.Count - offset), out readValueBytesCount);
+                    var binaryValueResult = ReadBinaryValue(data);
                     valuePresenter = binaryValueResult.presenter;
                     value = binaryValueResult.value;
                     subtybe = binaryValueResult.subtybe;
-                    offset += readValueBytesCount;
                     break;
                 case BsonElementTypes.bUndefined:
                     value = new byte[] { };
                     valuePresenter = new PredefinedValuePresenter("UNDEFINED");
                     break;
                 case BsonElementTypes.bObjectId:
-                    value = data.Slice(offset, 12).ToArray();
+                    value = data.ReadBytes(12);
                     valuePresenter = new ObjectIdValuePresenter(value);
-                    offset += 12;
                     break;
                 case BsonElementTypes.bBoolean:
-                    value = new byte[] { data[offset] };
-                    valuePresenter = new BooleanValuePresenter(data[offset]);
-                    offset += 1;
+                    value = new byte[] { data.ReadByte() };
+                    valuePresenter = new BooleanValuePresenter(value[0]);
                     break;
                 case BsonElementTypes.bUTCDateTime:
-                    value = data.Slice(offset, Int64Length).ToArray();
+                    value = data.ReadBytes(Int64Length).ToArray();
                     valuePresenter = new UtcDateTimePresenter(value);
-                    offset += Int64Length;
                     break;
                 case BsonElementTypes.bNull:
                     value = new byte[] { };
                     valuePresenter = new PredefinedValuePresenter("NULL");
                     break;
                 case BsonElementTypes.bRegularExpression:
-                    var patternValue = ReadCstringValue(data.Slice(offset, data.Count - offset).ToArray(), out readValueBytesCount);
-                    offset += readValueBytesCount;
-                    var optionsValue = ReadCstringValue(data.Slice(offset, data.Count - offset).ToArray(), out readValueBytesCount);
-                    offset += readValueBytesCount;
+                    var patternValue = ReadCstringValue(data);
+                    var optionsValue = ReadCstringValue(data);
                     value = patternValue.Concat(optionsValue).ToArray();
-                    valuePresenter = new RegexValuePresenter(new StringValuePresenter(patternValue), new StringValuePresenter(optionsValue));
+                    valuePresenter = new RegexValuePresenter(
+                        new StringValuePresenter(patternValue.SkipLast(1).ToArray()),
+                        new StringValuePresenter(optionsValue.SkipLast(1).ToArray()));
                     break;
                 case BsonElementTypes.bDbPointer:
-                    var stringValue = ReadStringValue(data.Slice(offset, data.Count - offset), out readValueBytesCount);
-                    offset += readValueBytesCount;
-                    var objectIdValue = data.Slice(offset, 12).ToArray();
-                    offset += 12;
+                    var stringValue = ReadStringValue(data);
+                    var objectIdValue = data.ReadBytes(12);
                     value = stringValue.Concat(objectIdValue).ToArray();
-                    valuePresenter = new DbPointerValuePresenter(new StringValuePresenter(stringValue), new ObjectIdValuePresenter(objectIdValue));
+                    valuePresenter = new DbPointerValuePresenter(
+                        new StringValuePresenter(stringValue.SkipLast(1).ToArray()),
+                        new ObjectIdValuePresenter(objectIdValue));
                     break;
                 case BsonElementTypes.bJavascriptCodeScoped:
-                    var codeWBytesCount = GetInt32(data, offset);
-                    offset += Int32Length;
-                    stringValue = ReadStringValue(data.Slice(offset, data.Count - offset).ToArray(), out readValueBytesCount);
-                    offset += readValueBytesCount;
-                    innerDocument = ReadDocument(data.Slice(offset, data.Count - offset).ToArray());
-                    offset += innerDocument.DocumentLength;
-                    value = stringValue.Concat(data.Slice(offset, innerDocument.DocumentLength)).ToArray();
-                    valuePresenter = new CompositeValuePresenter(new StringValuePresenter(stringValue), new DocumentValuePresenter(innerDocument));
+                    var codeWBytesCount = data.ReadInt32(); // ?
+                    stringValue = ReadStringValue(data);
+                    innerDocument = ReadDocument(data);
+                    value = stringValue.Concat(data.ReadBytes(innerDocument.DocumentLength)).ToArray();
+                    valuePresenter = new CompositeValuePresenter(
+                        new StringValuePresenter(stringValue.SkipLast(1).ToArray()),
+                        new DocumentValuePresenter(innerDocument));
                     break;
                 case BsonElementTypes.bInt32:
-                    value = data.Slice(offset, Int32Length).ToArray();
+                    value = data.ReadBytes(Int32Length);
                     valuePresenter = new IntValuePresenter(value);
-                    offset += Int32Length;
                     break;
                 case BsonElementTypes.bTimeStamp:
-                    value = data.Slice(offset, Uint64Length).ToArray();
+                    value = data.ReadBytes(Uint64Length);
                     valuePresenter = new TimeStampVauePresenter(value);
-                    offset += Uint64Length;
                     break;
                 case BsonElementTypes.bInt64:
-                    value = data.Slice(offset, Int64Length).ToArray();
+                    value = data.ReadBytes(Int64Length);
                     valuePresenter = new IntValuePresenter(value);
-                    offset += Int64Length;
                     break;
                 case BsonElementTypes.bDecimalFlloatingPoint:
-                    value = data.Slice(offset, Decimal128Length).ToArray();
+                    value = data.ReadBytes(Decimal128Length);
                     valuePresenter = new FloatingPointValuePresenter(value);
-                    offset += Decimal128Length;
                     break;
                 case BsonElementTypes.bMinkey:
                     value = new byte[] { };
@@ -192,49 +177,36 @@ namespace BsonInspector.Core
                     throw new ArgumentException($"Unsupported element type {elementType}");
             }
 
-            readBytesCount = offset;
             return new BsonElement(elementType, elementName, new BsonElementValue(value, valuePresenter, innerDocument), subtybe);
         }
 
-        private byte[] ReadStringValue(ArraySegment<byte> data, out int readBytesCount)
+        private byte[] ReadStringValue(BinaryReader data)
         {
-            int offset = 0;
-            int numberOfValueBytes = GetInt32(data, offset);
-            offset += Int32Length;
-
-            readBytesCount = offset + numberOfValueBytes;
-            return data.Slice(offset, numberOfValueBytes - 1).ToArray();
+            int numberOfValueBytes = data.ReadInt32();
+            return data.ReadBytes(numberOfValueBytes).ToArray();
         }
 
-        private byte[] ReadCstringValue(ArraySegment<byte> data, out int readBytesCount)
+        private byte[] ReadCstringValue(BinaryReader data)
         {
             var nameBytes = new List<byte>();
-            int index = 0;
-            byte readByte = data[index];
-
-            while (readByte != EndingSymbol)
+            byte readByte;
+            do
             {
+                readByte = data.ReadByte();
                 nameBytes.Add(readByte);
-                index++;
-                readByte = data[index];
             }
+            while (readByte != EndingSymbol);
 
-            readBytesCount = index + 1; //1 is end symbol 
             return nameBytes.ToArray();
         }
 
-        private (IValuePresenter presenter, byte[] value, BinarySubtybes subtybe) ReadBinaryValue(ArraySegment<byte> data, out int readBytesCount)
+        private (IValuePresenter presenter, byte[] value, BinarySubtybes subtybe) ReadBinaryValue(BinaryReader data)
         {
-            int offset = 0;
-            var valueBytesCount = GetInt32(data, offset);
-            offset += Int32Length;
-            var subtypeByte = data[offset];
-            offset += 1;
+            var valueBytesCount = data.ReadInt32();
+            var subtypeByte = data.ReadByte();
             var subtype = ParseBinarySubtype(subtypeByte);
 
-            readBytesCount = offset + valueBytesCount;
-
-            var value = data.AsSpan(offset, valueBytesCount).ToArray();
+            var value = data.ReadBytes(valueBytesCount);
             IValuePresenter valuePresenter;
             switch (subtype)
             {
@@ -253,8 +225,7 @@ namespace BsonInspector.Core
             return (valuePresenter, value, subtype);
         }
 
-        private string ReadElementName(ArraySegment<byte> data, out int readNameBytesCount) =>
-                Encoding.UTF8.GetString(ReadCstringValue(data, out readNameBytesCount));
+        private string ReadElementName(BinaryReader data) => Encoding.UTF8.GetString(ReadCstringValue(data).SkipLast(1).ToArray());
 
         private BsonElementTypes ParseElementType(byte dataType)
         {
@@ -330,9 +301,9 @@ namespace BsonInspector.Core
             }
         }
 
-        private int GetInt32(byte[] data, int start)
+        private int GetInt32(BinaryReader data, int start)
         {
-            return BitConverter.ToInt32(data.AsSpan(start, Int32Length));
+            return BitConverter.ToInt32(data.ReadBytes(Int32Length));
         }
 
         private int GetInt32(ArraySegment<byte> data, int start)
