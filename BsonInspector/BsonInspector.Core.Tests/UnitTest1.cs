@@ -1,5 +1,6 @@
 using BsonInspector.Core.ValuePresenters;
 using System;
+using System.IO;
 using Xunit;
 
 namespace BsonInspector.Core.Tests
@@ -26,8 +27,9 @@ namespace BsonInspector.Core.Tests
 
             var bson = generator.Generate(new { Id = Guid.NewGuid(), SveikasSk = 15, Tekstas = "Silvija", slenkantis=15.44, arne = false, dc = 300.545546545645111m });
 
-            var inspected = inspector.Inspect(bson);
-            Console.Write(new DocumentValuePresenter(inspected.Document).Presentation());
+            var stream = new MemoryStream(bson);
+
+            var inspected = inspector.Inspect(stream);
         }
     }
 }

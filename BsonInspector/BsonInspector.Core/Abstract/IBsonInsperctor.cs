@@ -1,7 +1,9 @@
-﻿namespace BsonInspector.Core.Abstract
+﻿using System.IO;
+
+namespace BsonInspector.Core.Abstract
 {
     public interface IBsonInsperctor
     {
-        BsonInspectionResult Inspect(byte[] bson);
+        BsonInspectionResult Inspect(Stream bson);
     }
 }

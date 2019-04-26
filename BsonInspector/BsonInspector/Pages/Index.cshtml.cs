@@ -38,9 +38,7 @@ namespace BsonInspector.Pages
             {
                 using (var stream = BsonFile.OpenReadStream())
                 {
-                    var bson = ReadFully(stream);
-                    var bsonInspectionResult = _bsonInspector.Inspect(bson);
-
+                    var bsonInspectionResult = _bsonInspector.Inspect(stream);
                     return ViewComponent("BsonDocument", new { model = bsonInspectionResult });
                 }
             }
@@ -48,21 +46,6 @@ namespace BsonInspector.Pages
             {
                 return Content(ex.Message);
             }
-        }
-
-        private static byte[] ReadFully(Stream input)
-        {
-            byte[] buffer = new byte[16 * 1024];
-            using (var ms = new MemoryStream())
-            {
-                int read;
-                while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    ms.Write(buffer, 0, read);
-                }
-                return ms.ToArray();
-            }
-
         }
     }
 }
